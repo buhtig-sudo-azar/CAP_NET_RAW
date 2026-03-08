@@ -1,338 +1,503 @@
 #!/bin/bash
-# ============================================================================
-# МОДУЛЬ: 01_sniffer.sh (интерактивная версия с расширенным анализом)
-# НАЗНАЧЕНИЕ: Запуск C-сниффера с выбором режима и интерфейса через меню.
-#
-# ФУНКЦИОНАЛ:
-#   - Показывает список доступных сетевых интерфейсов.
-#   - Предлагает выбрать режим: контейнер (Podman) или нативный запуск.
-#   - В контейнерном режиме проверяет наличие Podman, собирает образ (если нужно).
-#   - В нативном режиме компилирует и запускает сниффер прямо на хосте.
-#   - Сохраняет дампы в ~/hack_kit/data/captures/ с расширенным анализом через Scapy.
-#   - Поддерживает автоматический запуск с аргументами (для вызова из ядра без меню).
-# ============================================================================
+# modules/01_sniffer.sh — ПРОФЕССИОНАЛЬНЫЙ СНИФФЕР (С ЖИВЫМ ВЫВОДОМ)
 
-# ----------------------------------------------------------------------------
-# Функция run() — обязательна для всех модулей. Вызывается ядром.
-# Если переданы аргументы, используем их без меню (для автоматизации).
-# Аргументы: $1 = интерфейс, $2 = режим (podman|native)
-# ----------------------------------------------------------------------------
 run() {
-    local interface="$1"
-    local mode="$2"
-
-    # Если аргументы не заданы – запускаем интерактивное меню
-    if [ -z "$interface" ] || [ -z "$mode" ]; then
-        echo "=== Модуль 01: Сниффер трафика ==="
-        choose_interface_and_mode
-        return $?
-    else
-        # Автоматический режим (аргументы переданы)
-        start_sniffer "$interface" "$mode"
-        return $?
-    fi
-}
-
-# ----------------------------------------------------------------------------
-# Функция выбора интерфейса и режима через меню
-# ----------------------------------------------------------------------------
-choose_interface_and_mode() {
-    # Получаем список активных сетевых интерфейсов (без loopback)
-    local interfaces=($(ip -o link show | awk -F': ' '{print $2}' | grep -v lo))
+    # ------------------------------------------------------------
+    # 1. АВТОМАТИЧЕСКАЯ ИНИЦИАЛИЗАЦИЯ
+    # ------------------------------------------------------------
     
-    if [ ${#interfaces[@]} -eq 0 ]; then
-        echo "[!] Нет доступных сетевых интерфейсов (кроме loopback)."
-        return 1
-    fi
-
-    # Меню выбора интерфейса
-    echo ""
-    echo "Доступные интерфейсы:"
-    for i in "${!interfaces[@]}"; do
-        echo "  $((i+1))) ${interfaces[$i]}"
-    done
-    echo ""
-    read -p "Выбери номер интерфейса (по умолчанию 1): " iface_choice
-    iface_choice=${iface_choice:-1}
-    
-    # Проверка корректности ввода
-    if ! [[ "$iface_choice" =~ ^[0-9]+$ ]] || [ "$iface_choice" -lt 1 ] || [ "$iface_choice" -gt "${#interfaces[@]}" ]; then
-        echo "[!] Неверный выбор. Использую первый интерфейс: ${interfaces[0]}"
-        iface_choice=1
-    fi
-    local selected_iface="${interfaces[$((iface_choice-1))]}"
-    echo "Выбран интерфейс: $selected_iface"
-    echo ""
-
-    # Меню выбора режима
-    echo "Выбери режим запуска:"
-    echo "  1) В контейнере (Podman/Docker) – изоляция, воспроизводимость"
-    echo "  2) Нативный (прямо на хосте) – быстрее, требует root"
-    echo "  3) Выход"
-    echo ""
-    read -p "Твой выбор (по умолчанию 1): " mode_choice
-    mode_choice=${mode_choice:-1}
-
-    case "$mode_choice" in
-        1)
-            echo "Выбран режим: контейнер"
-            start_sniffer "$selected_iface" "podman"
-            ;;
-        2)
-            echo "Выбран режим: нативный"
-            start_sniffer "$selected_iface" "native"
-            ;;
-        3)
-            echo "Выход из модуля."
-            return 0
-            ;;
-        *)
-            echo "[!] Неверный выбор. Использую контейнерный режим."
-            start_sniffer "$selected_iface" "podman"
-            ;;
-    esac
-}
-
-# ----------------------------------------------------------------------------
-# Функция, которая запускает сниффер в указанном режиме
-# Параметры: $1 — интерфейс, $2 — режим (podman или native)
-# ----------------------------------------------------------------------------
-start_sniffer() {
-    local interface="$1"
-    local mode="$2"
-
-    # ----------------------------------------------------------
-    # 1. Базовые пути
-    # ----------------------------------------------------------
-    local base_dir="${HACK_KIT_ROOT:-$(pwd)}"
-    local dockerfile_dir="$base_dir/dockerfiles/01_sniffer"
-    local c_source="$dockerfile_dir/sniffer.c"
-
-    # Проверка наличия исходника C
-    if [ ! -f "$c_source" ]; then
-        echo "[01_sniffer][ОШИБКА] Не найден исходник C: $c_source" >&2
-        return 1
-    fi
-
-    # ----------------------------------------------------------
-    # 2. RAM-диск (временная папка в памяти)
-    # ----------------------------------------------------------
-    local ram_dir="/dev/shm/sniffer_$$"
-    mkdir -p "$ram_dir"
-    echo "[01_sniffer] Временные файлы: $ram_dir"
-
-    # ----------------------------------------------------------
-    # 3. Запуск в зависимости от режима
-    # ----------------------------------------------------------
-    local exit_code=0
-    if [ "$mode" = "podman" ]; then
-        # --- Режим контейнера ---
-        if ! command -v podman &> /dev/null; then
-            echo "[01_sniffer][ОШИБКА] Podman не найден. Установи podman или выбери нативный режим." >&2
-            rm -rf "$ram_dir"
-            return 1
-        fi
-
-        local dockerfile="$dockerfile_dir/Dockerfile"
-        if [ ! -f "$dockerfile" ]; then
-            echo "[01_sniffer][ОШИБКА] Не найден Dockerfile: $dockerfile" >&2
-            rm -rf "$ram_dir"
-            return 1
-        fi
-
-        local image_name="localhost/hack_kit_01_sniffer:latest"
+    # Автоматически определяем корень проекта
+    if [ -z "$HACK_KIT_ROOT" ]; then
+        local current_dir="$PWD"
+        while [ "$current_dir" != "/" ]; do
+            if [ -d "$current_dir/dockerfiles" ] && [ -d "$current_dir/modules" ]; then
+                export HACK_KIT_ROOT="$current_dir"
+                break
+            fi
+            current_dir="$(dirname "$current_dir")"
+        done
         
-        # Сборка образа (если ещё не собран)
-        if ! podman image exists "$image_name" 2>/dev/null; then
-            echo "[01_sniffer] Сборка образа $image_name..."
-            podman build -t "$image_name" -f "$dockerfile" "$dockerfile_dir"
-            if [ $? -ne 0 ]; then
-                echo "[01_sniffer][ОШИБКА] Сборка провалилась" >&2
-                rm -rf "$ram_dir"
-                return 2
-            fi
+        if [ -z "$HACK_KIT_ROOT" ]; then
+            export HACK_KIT_ROOT="$HOME/TOR/hack_kit"
         fi
-
-        echo "[01_sniffer] Запуск контейнера на интерфейсе: $interface"
-        podman run --rm \
-            --privileged \
-            --network=host \
-            -v "$ram_dir:/data:Z" \
-            "$image_name" \
-            "/data/dump.pcap" "$interface"
-        exit_code=$?
-
-    elif [ "$mode" = "native" ]; then
-        # --- Нативный режим ---
-        echo "[01_sniffer] Компиляция C-кода..."
-        gcc "$c_source" -o "$ram_dir/sniffer"
-        if [ $? -ne 0 ]; then
-            echo "[01_sniffer][ОШИБКА] Компиляция провалилась" >&2
-            rm -rf "$ram_dir"
-            return 3
-        fi
-
-        echo "[01_sniffer] Запуск нативного сниффера на интерфейсе: $interface"
-        echo "[01_sniffer] (требуется root, запросим sudo)"
-        sudo "$ram_dir/sniffer" "$ram_dir/dump.pcap" "$interface"
-        exit_code=$?
-    else
-        echo "[01_sniffer][ОШИБКА] Неизвестный режим: $mode" >&2
-        rm -rf "$ram_dir"
-        return 4
     fi
+    
+    echo -e "${BLUE}📁 Корень проекта: $HACK_KIT_ROOT${NC}"
+    
+    # ------------------------------------------------------------
+    # 2. АВТОМАТИЧЕСКОЕ СОЗДАНИЕ СТРУКТУРЫ
+    # ------------------------------------------------------------
+    
+    local BIN_DIR="$HACK_KIT_ROOT/bin"
+    local DUMPS_DIR="$HACK_KIT_ROOT/dumps"
+    local DATA_DIR="$HACK_KIT_ROOT/bin/data/captures"
+    local SNIFFER_SRC="$HACK_KIT_ROOT/dockerfiles/01_sniffer/sniffer.c"
+    local SNIFFER_BIN="$BIN_DIR/sniffer"
+    
+    mkdir -p "$BIN_DIR" "$DUMPS_DIR" "$DATA_DIR" 2>/dev/null
+    
+    # ------------------------------------------------------------
+    # 3. ЦВЕТА ДЛЯ ВЫВОДА
+    # ------------------------------------------------------------
+    
+    local RED='\033[0;31m' GREEN='\033[0;32m' YELLOW='\033[1;33m' 
+    local BLUE='\033[0;34m' CYAN='\033[0;36m' PURPLE='\033[0;35m' NC='\033[0m'
 
-    # ----------------------------------------------------------
-    # 4. Обработка результата (общая для обоих режимов)
-    # ----------------------------------------------------------
-    if [ -f "$ram_dir/dump.pcap" ]; then
-        local size=$(stat -c%s "$ram_dir/dump.pcap" 2>/dev/null || stat -f%z "$ram_dir/dump.pcap" 2>/dev/null)
-        echo "[01_sniffer] Поймано $(($size / 1024)) KB данных"
-
-        if [ $size -gt 0 ]; then
-            local save_dir="$base_dir/data/captures"
-            mkdir -p "$save_dir"
-            local save_file="$save_dir/sniffer_$(date +%Y%m%d_%H%M%S).pcap"
-            cp "$ram_dir/dump.pcap" "$save_file"
-
-            # Корректируем владельца, если запускалось через sudo
-            if [ -n "$SUDO_USER" ]; then
-                chown "$SUDO_USER:$SUDO_USER" "$save_file"
-            fi
-
-            echo "[01_sniffer] ✅ Дамп сохранён: $save_file"
-            analyze "$save_file"
+    # ------------------------------------------------------------
+    # 4. ПРОВЕРКА И КОМПИЛЯЦИЯ
+    # ------------------------------------------------------------
+    
+    echo ""
+    echo "═══════════════════════════════════════════════════════"
+    echo -e "${BLUE}🔧 ПРОВЕРКА КОМПОНЕНТОВ${NC}"
+    echo "═══════════════════════════════════════════════════════"
+    
+    if [ -f "$SNIFFER_SRC" ]; then
+        echo -e "${YELLOW}🔨 Компилирую сниффер...${NC}"
+        
+        if ! command -v gcc >/dev/null 2>&1; then
+            echo -e "${RED}❌ gcc не установлен!${NC}"
         else
-            echo "[01_sniffer] ⚠️  Дамп пустой (нет трафика)"
+            gcc -o "$SNIFFER_BIN" "$SNIFFER_SRC" -Wall 2>/tmp/compile_errors.log
+            
+            if [ $? -eq 0 ] && [ -f "$SNIFFER_BIN" ]; then
+                chmod +x "$SNIFFER_BIN"
+                echo -e "${GREEN}✅ Компиляция успешна!${NC}"
+            else
+                echo -e "${RED}❌ Ошибка компиляции!${NC}"
+                rm -f "$SNIFFER_BIN"
+            fi
         fi
-    else
-        echo "[01_sniffer][ОШИБКА] Файл дампа не создан" >&2
     fi
-
-    # ----------------------------------------------------------
-    # 5. Очистка RAM-диска
-    # ----------------------------------------------------------
-    rm -rf "$ram_dir"
-    echo "[01_sniffer] Временные файлы очищены"
-
-    return $exit_code
-}
-
-# ----------------------------------------------------------
-# ФУНКЦИЯ АНАЛИЗА (расширенная версия)
-# ----------------------------------------------------------
-analyze() {
-    local pcap_file="$1"
     
-    if [ ! -f "$pcap_file" ]; then
-        echo "Ошибка: файл $pcap_file не найден" >&2
-        return 1
-    fi
+    # ------------------------------------------------------------
+    # 5. ПРОВЕРКА ИНТЕРФЕЙСА
+    # ------------------------------------------------------------
     
     echo ""
-    echo "══════════════════════════════════════════════════════"
-    echo "📊 АНАЛИЗ ЗАХВАЧЕННОГО ТРАФИКА"
-    echo "══════════════════════════════════════════════════════"
+    echo "═══════════════════════════════════════════════════════"
+    echo -e "${BLUE}🔌 ПРОВЕРКА ИНТЕРФЕЙСА${NC}"
+    echo "═══════════════════════════════════════════════════════"
     
-    # Запускаем Python-скрипт с Scapy
-    python3 -c "
-import sys
-from collections import Counter
-try:
-    from scapy.all import rdpcap, IP, TCP, UDP, ICMP, ARP
-except ImportError:
-    print('[!] Scapy не установлен. Установи: sudo apt install python3-scapy')
-    sys.exit(1)
-
-try:
-    packets = rdpcap(sys.argv[1])
-except Exception as e:
-    print(f'[!] Ошибка чтения pcap: {e}')
-    sys.exit(1)
-
-total = len(packets)
-if total == 0:
-    print('[!] Файл пуст')
-    sys.exit(0)
-
-print(f'📦 Всего пакетов: {total}')
-
-# Подсчёт пакетов по протоколам
-proto_count = Counter()
-ip_src = Counter()
-ip_dst = Counter()
-http_requests = []
-
-for pkt in packets:
-    if ARP in pkt:
-        proto_count['ARP'] += 1
-    elif IP in pkt:
-        ip = pkt[IP]
-        ip_src[ip.src] += 1
-        ip_dst[ip.dst] += 1
+    local INTERFACE=""
+    
+    # Сначала пробуем выбранный в ядре
+    if [ -n "$SELECTED_INTERFACE" ]; then
+        if ip link show "$SELECTED_INTERFACE" >/dev/null 2>&1; then
+            INTERFACE="$SELECTED_INTERFACE"
+            echo -e "${GREEN}✅ Использую интерфейс из ядра: $INTERFACE${NC}"
+        fi
+    fi
+    
+    # Если не работает - предлагаем выбрать
+    if [ -z "$INTERFACE" ]; then
+        echo -e "${YELLOW}📡 Доступные интерфейсы:${NC}"
+        echo ""
         
-        if TCP in pkt:
-            tcp = pkt[TCP]
-            proto_count['TCP'] += 1
-            # Проверяем, похоже ли на HTTP-запрос (на 80 порту или с данными)
-            if (tcp.dport == 80 or tcp.sport == 80) and tcp.payload:
-                payload = bytes(tcp.payload).decode('utf-8', errors='ignore')
-                if payload.startswith(('GET', 'POST', 'HEAD', 'PUT')):
-                    http_requests.append({
-                        'src': ip.src,
-                        'dst': ip.dst,
-                        'method': payload.split(' ')[0],
-                        'uri': payload.split(' ')[1] if len(payload.split(' ')) > 1 else ''
-                    })
-        elif UDP in pkt:
-            proto_count['UDP'] += 1
-        elif ICMP in pkt:
-            proto_count['ICMP'] += 1
-        else:
-            proto_count['IP-other'] += 1
-    else:
-        proto_count['Other'] += 1
+        local interfaces=()
+        local i=1
+        
+        while read -r line; do
+            if [[ "$line" =~ ^[0-9]+:\ (eth[0-9]+|wlan[0-9]+|enp[0-9]s[0-9]+):.*state\ UP ]]; then
+                iface="${BASH_REMATCH[1]}"
+                interfaces[$i]="$iface"
+                local ip=$(ip -4 addr show dev "$iface" 2>/dev/null | awk '/inet / {print $2}' | cut -d/ -f1 | head -1)
+                echo -e "  ${YELLOW}$i)${NC} ${GREEN}$iface${NC} ${ip:+🌐 $ip}"
+                ((i++))
+            fi
+        done < <(ip link show)
+        
+        # Добавляем lo
+        interfaces[$i]="lo"
+        echo -e "  ${YELLOW}$i)${NC} ${GREEN}lo${NC} 🌐 127.0.0.1"
+        
+        echo ""
+        read -p "Выбери номер интерфейса: " choice
+        
+        if [ -n "${interfaces[$choice]}" ]; then
+            INTERFACE="${interfaces[$choice]}"
+            echo -e "${GREEN}✅ Выбран интерфейс: $INTERFACE${NC}"
+        else
+            INTERFACE="eth0"
+            echo -e "${YELLOW}⚠️  Использую eth0${NC}"
+        fi
+    fi
+    
+    # Показываем IP
+    local ipv4=$(ip -4 addr show dev "$INTERFACE" 2>/dev/null | awk '/inet / {print $2}' | cut -d/ -f1 | head -1)
+    [ -n "$ipv4" ] && echo -e "   └─ IPv4: $ipv4"
 
-# Вывод статистики по протоколам
-print('\n📈 Протоколы:')
-for proto, cnt in proto_count.most_common():
-    print(f'  {proto:8} : {cnt:5} пакетов ({cnt/total*100:5.1f}%)')
+    # ------------------------------------------------------------
+    # 6. ОСНОВНЫЕ ФУНКЦИИ
+    # ------------------------------------------------------------
+    
+    clean_domain() {
+        echo "$1" | sed -E 's|^[a-zA-Z]+://||' | cut -d/ -f1 | cut -d: -f1 | xargs
+    }
 
-# Топ-5 отправителей
-print('\n⬆️  Топ-5 отправителей (IP):')
-for ip, cnt in ip_src.most_common(5):
-    print(f'  {ip:15} : {cnt:5} пакетов')
+    get_ip() {
+        local domain="$1"
+        local ip
+        
+        ip=$(nslookup "$domain" 2>/dev/null | grep -A 1 "Name:" | grep "Address:" | head -1 | awk '{print $2}')
+        [ -z "$ip" ] && ip=$(getent hosts "$domain" 2>/dev/null | awk '{print $1}' | head -1)
+        [ -z "$ip" ] && ip=$(ping -c1 "$domain" 2>/dev/null | head -1 | grep -oP '\(\K[^)]+')
+        
+        echo "$ip"
+    }
 
-# Топ-5 получателей
-print('\n⬇️  Топ-5 получателей (IP):')
-for ip, cnt in ip_dst.most_common(5):
-    print(f'  {ip:15} : {cnt:5} пакетов')
+    check_ip() {
+        timeout 2 bash -c "echo >/dev/tcp/$1/${2:-80}" 2>/dev/null
+        return $?
+    }
 
-# HTTP-запросы
-if http_requests:
-    print('\n🌐 HTTP-запросы (GET/POST):')
-    for req in http_requests[:5]:  # покажем только первые 5
-        print(f'  {req["src"]} -> {req["dst"]} : {req["method"]} {req["uri"]}')
-    if len(http_requests) > 5:
-        print(f'  ... и ещё {len(http_requests)-5} запросов')
-else:
-    print('\n🌐 HTTP-запросов не найдено (возможно, весь трафик HTTPS)')
+    # 🔥 ФУНКЦИЯ ЗАПУСКА С ЖИВЫМ ВЫВОДОМ
+    run_sniffer_live() {
+        local filter="$1"
+        local target="$2"
+        local dump_file="$DUMPS_DIR/dump_$(date +%Y%m%d_%H%M%S).pcap"
+        
+        echo ""
+        echo "═══════════════════════════════════════════════════════"
+        echo -e "${GREEN}🚀 ЗАПУСК СНИФФЕРА С ЖИВЫМ ВЫВОДОМ${NC}"
+        echo "═══════════════════════════════════════════════════════"
+        echo "  🌐 Интерфейс: $INTERFACE"
+        echo "  💾 Дамп:      $(basename "$dump_file")"
+        echo "  🎯 Цель:      $target"
+        echo "  🔍 Фильтр:    $filter"
+        echo ""
+        echo -e "${YELLOW}⚠️  Ctrl+C для остановки и анализа${NC}"
+        echo "═══════════════════════════════════════════════════════"
+        echo ""
+        
+        read -p "Запустить? (y/N): " confirm
+        [[ "${confirm,,}" != "y" ]] && return 1
+        
+        # Очищаем экран перед началом
+        clear
+        
+        # Запускаем сниффер в фоне
+        if [ -x "$SNIFFER_BIN" ]; then
+            # Своя программа
+            sudo "$SNIFFER_BIN" "$dump_file" "$INTERFACE" "$filter" &
+            SNIFFER_PID=$!
+            
+            echo -e "${GREEN}🔍 СНИФФЕР ЗАПУЩЕН (PID: $SNIFFER_PID)${NC}"
+            echo -e "${YELLOW}📡 ЛОВЛЮ ПАКЕТЫ...${NC}"
+            echo ""
+            
+            # Показываем живые пакеты
+            local last_size=0
+            local count=0
+            
+            while kill -0 $SNIFFER_PID 2>/dev/null; do
+                if [ -f "$dump_file" ]; then
+                    local current_size=$(stat -c%s "$dump_file" 2>/dev/null || echo 0)
+                    
+                    if [ "$current_size" -gt "$last_size" ]; then
+                        # Появились новые данные
+                        echo -e "${CYAN}📦 Новые пакеты (${current_size} байт):${NC}"
+                        
+                        # Показываем последние 3 пакета из дампа
+                        sudo tcpdump -r "$dump_file" -c 3 -n 2>/dev/null | tail -3
+                        echo ""
+                        
+                        last_size=$current_size
+                        ((count++))
+                        
+                        if [ $count -ge 10 ]; then
+                            echo -e "${YELLOW}📊 Показано 10 пакетов. Дамп продолжается...${NC}"
+                            echo -e "${YELLOW}   Нажми Ctrl+C для остановки${NC}"
+                            count=0
+                        fi
+                    fi
+                fi
+                sleep 0.5
+            done
+            
+        else
+            # tcpdump с живым выводом
+            echo -e "${YELLOW}🔍 Использую tcpdump (живой вывод)${NC}"
+            echo ""
+            
+            sudo tcpdump -i "$INTERFACE" -w "$dump_file" "$filter" -v 2>&1 | while read line; do
+                echo -e "${CYAN}📦${NC} $line"
+            done &
+            TCPDUMP_PID=$!
+            
+            wait $TCPDUMP_PID
+        fi
+        
+        # Анализируем результат
+        if [ -f "$dump_file" ]; then
+            local size=$(du -h "$dump_file" | cut -f1)
+            local packets=$(tcpdump -r "$dump_file" 2>/dev/null | wc -l)
+            
+            echo ""
+            echo "═══════════════════════════════════════════════════════"
+            echo -e "${GREEN}✅ ЗАХВАТ ЗАВЕРШЕН${NC}"
+            echo "═══════════════════════════════════════════════════════"
+            echo "  📁 Дамп: $(basename "$dump_file")"
+            echo "  📊 Пакетов: $packets"
+            echo "  💾 Размер: $size"
+            echo ""
+            
+            # Спрашиваем про анализ
+            read -p "Анализировать дамп? (y/N): " anal
+            if [[ "${anal,,}" == "y" ]]; then
+                analyze_dump "$dump_file" "$filter" "$target"
+            fi
+        else
+            echo -e "${RED}❌ Дамп не создан!${NC}"
+        fi
+    }
 
-print('\n══════════════════════════════════════════════════════\n')
-" "$pcap_file"
+    # 🔥 ФУНКЦИЯ БЫСТРОГО ЗАХВАТА
+    run_sniffer_quick() {
+        local filter="$1"
+        local target="$2"
+        local dump_file="$DUMPS_DIR/quick_$(date +%Y%m%d_%H%M%S).pcap"
+        
+        echo ""
+        echo "═══════════════════════════════════════════════════════"
+        echo -e "${GREEN}🚀 БЫСТРЫЙ ЗАХВАТ (10 секунд)${NC}"
+        echo "═══════════════════════════════════════════════════════"
+        echo "  🌐 Интерфейс: $INTERFACE"
+        echo "  🎯 Цель:      $target"
+        echo "  ⏱️  Время:    10 секунд"
+        echo ""
+        
+        # Запускаем сниффер на 10 секунд
+        if [ -x "$SNIFFER_BIN" ]; then
+            sudo "$SNIFFER_BIN" "$dump_file" "$INTERFACE" "$filter" &
+            SNIFFER_PID=$!
+        else
+            sudo tcpdump -i "$INTERFACE" -w "$dump_file" "$filter" &
+            SNIFFER_PID=$!
+        fi
+        
+        # Обратный отсчет
+            for i in {10..1}; do
+            echo -ne "${YELLOW}⏳ Осталось: $i сек${NC}\r"
+            sleep 1
+        done
+        echo -e "${GREEN}✅ Время вышло!${NC}"
+        
+        # Убиваем процесс
+        sudo kill $SNIFFER_PID 2>/dev/null
+        sleep 1
+        
+        # Проверяем результат
+        if [ -f "$dump_file" ]; then
+            local size=$(du -h "$dump_file" | cut -f1)
+            local packets=$(tcpdump -r "$dump_file" 2>/dev/null | wc -l)
+            
+            echo ""
+            echo "═══════════════════════════════════════════════════════"
+            echo -e "${GREEN}✅ ЗАХВАТ ЗАВЕРШЕН${NC}"
+            echo "═══════════════════════════════════════════════════════"
+            echo "  📁 Дамп: $(basename "$dump_file")"
+            echo "  📊 Пакетов: $packets"
+            echo "  💾 Размер: $size"
+            echo ""
+            
+            # Показываем первые 10 пакетов
+            echo -e "${CYAN}📋 Первые 10 пакетов:${NC}"
+            tcpdump -r "$dump_file" -c 10 -n 2>/dev/null
+            echo ""
+            
+            read -p "Анализировать подробно? (y/N): " anal
+            if [[ "${anal,,}" == "y" ]]; then
+                analyze_dump "$dump_file" "$filter" "$target"
+            fi
+        else
+            echo -e "${RED}❌ Дамп не создан!${NC}"
+        fi
+    }
+
+    analyze_dump() {
+        local dump_file="$1"
+        local filter="$2"
+        local target="$3"
+        
+        [ ! -f "$dump_file" ] && { 
+            echo -e "${RED}❌ Файл дампа не найден${NC}"
+            return 1 
+        }
+        
+        clear
+        echo "═══════════════════════════════════════════════════════════════════════════════"
+        echo -e "${CYAN}🔍 АНАЛИЗ ПЕРЕХВАЧЕННОГО ТРАФИКА${NC}"
+        echo "═══════════════════════════════════════════════════════════════════════════════"
+        echo ""
+        echo "📁 Файл:  $(basename "$dump_file")"
+        echo "📏 Размер: $(du -h "$dump_file" | cut -f1)"
+        echo "🎯 Цель:  $target (фильтр: $filter)"
+        echo ""
+        
+        # Общая статистика
+        local total=$(tcpdump -r "$dump_file" -n 2>/dev/null | wc -l)
+        local ip_count=$(tcpdump -r "$dump_file" -n 2>/dev/null | grep -c "IP" || echo 0)
+        local arp_count=$(tcpdump -r "$dump_file" -n 2>/dev/null | grep -c "ARP" || echo 0)
+        
+        echo "📊 Статистика:"
+        echo "   Всего пакетов: $total"
+        echo "   IP пакетов:    $ip_count"
+        echo "   ARP пакетов:   $arp_count"
+        echo ""
+        
+        # Топ источников
+        echo -e "${PURPLE}📊 Топ источников:${NC}"
+        tcpdump -r "$dump_file" -n 2>/dev/null | awk '{print $3}' | cut -d. -f1-4 | sort | uniq -c | sort -rn | head -10
+        echo ""
+        
+        # Топ назначений
+        echo -e "${PURPLE}📊 Топ назначений:${NC}"
+        tcpdump -r "$dump_file" -n 2>/dev/null | awk '{print $5}' | cut -d. -f1-4 | sort | uniq -c | sort -rn | head -10
+        echo ""
+        
+        # Протоколы
+        echo -e "${PURPLE}📊 Протоколы:${NC}"
+        tcpdump -r "$dump_file" -v 2>/dev/null | grep -oP '(?<=, )\w+(?=,)' | sort | uniq -c | sort -rn | head -10
+        echo ""
+        
+        # Показываем пакеты с целью
+        if [ -n "$filter" ] && [ "$filter" != "any" ]; then
+            echo -e "${PURPLE}🎯 Пакеты с целью $filter:${NC}"
+            tcpdump -r "$dump_file" -n -c 20 2>/dev/null | grep "$filter" | head -10
+            echo ""
+        fi
+        
+        echo "═══════════════════════════════════════════════════════════════════════════════"
+        echo -e "${YELLOW}💡 Команды для глубокого анализа:${NC}"
+        echo "   wireshark \"$dump_file\""
+        echo "   tshark -r \"$dump_file\" -Y \"ip.addr == $filter\""
+        echo "   tcpdump -r \"$dump_file\" -nnvv -A"
+    }
+
+    # ------------------------------------------------------------
+    # 7. ГЛАВНЫЙ ЦИКЛ
+    # ------------------------------------------------------------
+    
+    while true; do
+        clear
+        echo "═══════════════════════════════════════════════════════"
+        echo -e "${BLUE}🔍 ПРОФЕССИОНАЛЬНЫЙ СНИФФЕР v6.0 (ЖИВОЙ ВЫВОД)${NC}"
+        echo "═══════════════════════════════════════════════════════"
+        echo -e "🌐 Интерфейс: ${GREEN}$INTERFACE${NC}"
+        
+        if [ -x "$SNIFFER_BIN" ]; then
+            echo -e "   └─ ${GREEN}✓ своя программа${NC}"
+        else
+            echo -e "   └─ ${YELLOW}⚠️  tcpdump${NC}"
+        fi
+        
+        local ipv4=$(ip -4 addr show dev "$INTERFACE" 2>/dev/null | awk '/inet / {print $2}' | cut -d/ -f1 | head -1)
+        [ -n "$ipv4" ] && echo -e "   └─ IPv4: ${CYAN}$ipv4${NC}"
+        
+        echo "───────────────────────────────────────────────────────"
+        echo "   1) 🎯 ЗАХВАТИТЬ (с живым выводом)"
+        echo "   2) 📊 Анализ дампа"
+        echo "   3) ⚡ БЫСТРЫЙ ЗАХВАТ (10 сек)"
+        echo "   4) 🧪 ТЕСТОВЫЙ (ping + захват)"
+        echo "   5) ❌ Выход"
+        echo ""
+        read -p "Выбери режим [1]: " mode
+        mode=${mode:-1}
+        
+        case $mode in
+            1|3|4)
+                echo ""
+                read -p "🎯 Цель (домен/IP): " target
+                target=$(clean_domain "$target")
+                
+                # Получаем IP
+                if [[ $target =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] || [[ $target =~ ^[0-9a-fA-F:]+$ ]]; then
+                    target_ip="$target"
+                else
+                    target_ip=$(get_ip "$target")
+                fi
+                
+                if [ -z "$target_ip" ]; then
+                    echo -e "${RED}❌ Не удалось разрешить домен${NC}"
+                    read -p $'\nНажми Enter...'
+                    continue
+                fi
+                
+                echo -e "${GREEN}✅ IP: $target_ip${NC}"
+                
+                # Проверка доступности для тестового режима
+                if [ "$mode" = "4" ]; then
+                    echo -n "🔍 Проверка доступности... "
+                    if check_ip "$target_ip"; then
+                        echo -e "${GREEN}ОТВЕЧАЕТ${NC}"
+                        echo -e "${YELLOW}📡 Запускаю ping...${NC}"
+                        ping -c 5 "$target_ip" >/dev/null 2>&1 &
+                    else
+                        echo -e "${YELLOW}⚠️  НЕ ОТВЕЧАЕТ${NC}"
+                    fi
+                fi
+                
+                # Фильтр
+                local filter="$target_ip"
+                
+                # Выбор режима
+                case $mode in
+                    1) run_sniffer_live "$filter" "$target" ;;
+                    3) run_sniffer_quick "$filter" "$target" ;;
+                    4) run_sniffer_live "$filter" "$target" ;;
+                esac
+                ;;
+                
+            2)
+                echo ""
+                echo "📁 Доступные дампы:"
+                local dumps=("$DUMPS_DIR"/*.pcap)
+                
+                if [ ${#dumps[@]} -eq 0 ] || [ ! -f "${dumps[0]}" ]; then
+                    echo -e "${YELLOW}📭 Нет дампов${NC}"
+                else
+                    local i=1
+                    for dump in "${dumps[@]}"; do
+                        if [ -f "$dump" ]; then
+                            local size=$(du -h "$dump" 2>/dev/null | cut -f1)
+                            echo "  $i) $(basename "$dump") ($size)"
+                            ((i++))
+                        fi
+                    done
+                    echo ""
+                    read -p "Выбери номер дампа: " num
+                    
+                    local selected_dump=""
+                    i=1
+                    for dump in "${dumps[@]}"; do
+                        if [ -f "$dump" ]; then
+                            if [ "$i" -eq "$num" ]; then
+                                selected_dump="$dump"
+                                break
+                            fi
+                            ((i++))
+                        fi
+                    done
+                    
+                    if [ -n "$selected_dump" ]; then
+                        read -p "Цель для анализа (IP): " target_ip
+                        analyze_dump "$selected_dump" "$target_ip" "$target_ip"
+                    fi
+                fi
+                ;;
+                
+            5|q|Q)
+                echo -e "${GREEN}👋 Пока!${NC}"
+                return 0
+                ;;
+        esac
+        
+        echo ""
+        read -p "🔄 Нажми Enter для продолжения..."
+    done
 }
 
-# ----------------------------------------------------------------------------
-# Если скрипт запущен напрямую (не через ядро) — позволяем передать аргументы
-# или запустить меню.
-# ----------------------------------------------------------------------------
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    # Скрипт запущен как самостоятельный, а не через source
-    if [ "$#" -ge 2 ]; then
-        # Аргументы: интерфейс и режим
-        run "$1" "$2"
-    else
-        # Без аргументов — запускаем меню
-        run
-    fi
+    run
 fi

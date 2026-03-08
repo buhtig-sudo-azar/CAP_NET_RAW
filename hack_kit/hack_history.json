@@ -1,0 +1,320 @@
+[
+{
+        "action": "01_sniffer",
+        "topic": "сеть",
+        "experiment": "Захват трафика с фильтром ''",
+        "container_name": "/home/azar/TOR/hack_kit/bin/sniffer",
+        "dockerfile": "",
+        "result": "/home/azar/TOR/hack_kit/dumps/dump_20260304_184624.pcap",
+        "output_summary": "",
+        "project_sync": ""
+    }
+]
+{
+        "action": "01_sniffer",
+        "topic": "сеть",
+        "experiment": "Захват трафика с фильтром ''",
+        "container_name": "/home/azar/TOR/hack_kit/bin/sniffer",
+        "dockerfile": "",
+        "result": "/home/azar/TOR/hack_kit/dumps/dump_20260304_190611.pcap",
+        "output_summary": "",
+        "project_sync": ""
+    }
+]
+{
+        "action": "02_squid_proxy",
+        "topic": "прокси",
+        "experiment": "Запуск Squid на порту 3128 (без сохранения)",
+        "container_name": "squid-proxy-32939",
+        "dockerfile": "sameersbn/squid",
+        "result": "успех",
+        "output_summary": "порт 3128",
+        "project_sync": "yes"
+    }
+]
+{
+        "action": "02_squid_proxy",
+        "topic": "прокси",
+        "experiment": "Запуск Squid на порту 3130 (без сохранения)",
+        "container_name": "squid-proxy-32939",
+        "dockerfile": "sameersbn/squid",
+        "result": "успех",
+        "output_summary": "порт 3130",
+        "project_sync": "yes"
+    }
+]
+{
+        "action": "02_squid_proxy",
+        "topic": "прокси",
+        "experiment": "Запуск Squid на порту 3128 (без сохранения)",
+        "container_name": "squid-proxy-94912",
+        "dockerfile": "sameersbn/squid",
+        "result": "успех",
+        "output_summary": "порт 3128",
+        "project_sync": "yes"
+    }
+]
+{
+        "action": "02_squid_proxy",
+        "topic": "прокси",
+        "experiment": "Запуск Squid на порту 3128",
+        "container_name": "squid-proxy-117037",
+        "dockerfile": "sameersbn/squid",
+        "result": "успех",
+        "output_summary": "Порт 3128, сохранение: n",
+        "project_sync": "yes"
+    }
+]
+{
+        "action": "02_squid_proxy",
+        "topic": "прокси",
+        "experiment": "Запуск Squid (образ: localhost/squid-custom:v1)",
+        "container_name": "squid-proxy-183732",
+        "dockerfile": "localhost/squid-custom:v1",
+        "result": "успех",
+        "output_summary": "Порт 3128, сохранение: n",
+        "project_sync": "yes"
+    }
+]
+{
+        "action": "02_squid_proxy",
+        "topic": "прокси",
+        "experiment": "Запуск Squid (образ: localhost/squid-custom:v1)",
+        "container_name": "squid-proxy-187906",
+        "dockerfile": "localhost/squid-custom:v1",
+        "result": "успех",
+        "output_summary": "Порт 3130, сохранение: n",
+        "project_sync": "yes"
+    }
+]
+{
+        "action": "02_squid_proxy",
+        "topic": "прокси",
+        "experiment": "Запуск Squid на порту 3128",
+        "container_name": "squid-proxy-216112",
+        "dockerfile": "sameersbn/squid",
+        "result": "успех",
+        "output_summary": "Порт 3128, сохранение: n, автонастройка: y",
+        "project_sync": "yes"
+    }
+]
+{
+        "action": "02_squid_proxy",
+        "topic": "прокси",
+        "experiment": "Запуск Squid на порту 3130",
+        "container_name": "squid-proxy-226838",
+        "dockerfile": "docker.io/sameersbn/squid:latest",
+        "result": "успех",
+        "output_summary": "Порт 3130, сохранение: n, правило доступа: 2",
+        "project_sync": "yes"
+    }
+]
+{
+        "action": "01_sniffer",
+        "topic": "сеть",
+        "experiment": "Захват на eth2 | Фильтр: '34.160.111.145'",
+        "container_name": "/home/azar/TOR/hack_kit/bin/sniffer",
+        "dockerfile": "sniffer.c",
+        "result": "/home/azar/TOR/hack_kit/dumps/dump_20260305_180004.pcap",
+        "output_summary": "УСПЕХ",
+        "project_sync": "Размер: 4,0K"
+    }
+]
+{
+        "action": "01_sniffer",
+        "topic": "сеть",
+        "experiment": "Захват трафика к ifconfig.me (2600:1901:0:b2bd::) на eth2",
+        "container_name": "/home/azar/TOR/hack_kit/bin/sniffer",
+        "dockerfile": "sniffer.c",
+        "result": "/home/azar/TOR/hack_kit/dumps/dump_20260305_181157.pcap",
+        "output_summary": "УСПЕХ",
+        "project_sync": "Размер: 168K"
+    }
+]
+{
+        "action": "01_sniffer",
+        "topic": "сеть",
+        "experiment": "Захват на eth2 | Фильтр: '192.168.1.1'",
+        "container_name": "/home/azar/TOR/hack_kit/bin/sniffer",
+        "dockerfile": "sniffer.c",
+        "result": "/home/azar/TOR/hack_kit/dumps/dump_20260305_175217.pcap",
+        "output_summary": "ОШИБКА",
+        "project_sync": "Размер: 0"
+    }
+]
+{
+        "action": "02_squid_proxy",
+        "topic": "прокси",
+        "experiment": "Запуск Squid на порту 3131",
+        "container_name": "squid-proxy-231903",
+        "dockerfile": "docker.io/sameersbn/squid:latest",
+        "result": "успех",
+        "output_summary": "Порт 3131, сохранение: n, правило доступа: 2",
+        "project_sync": "yes"
+    }
+]
+{
+        "action": "01_sniffer",
+        "topic": "сеть",
+        "experiment": "Захват трафика к ifconfig.me (2600:1901:0:b2bd::) на eth2",
+        "container_name": "/home/azar/TOR/hack_kit/bin/sniffer",
+        "dockerfile": "sniffer.c",
+        "result": "/home/azar/TOR/hack_kit/dumps/dump_20260305_181527.pcap",
+        "output_summary": "УСПЕХ",
+        "project_sync": "Размер: 4,0K"
+    }
+]
+{
+        "action": "01_sniffer",
+        "topic": "сеть",
+        "experiment": "Захват трафика к ifconfig.me (2600:1901:0:b2bd::) на eth2",
+        "container_name": "/home/azar/TOR/hack_kit/bin/sniffer",
+        "dockerfile": "sniffer.c",
+        "result": "/home/azar/TOR/hack_kit/dumps/dump_20260305_182418.pcap",
+        "output_summary": "УСПЕХ",
+        "project_sync": "Размер: 4,0K"
+    }
+]
+{
+        "action": "02_squid_proxy",
+        "topic": "прокси",
+        "experiment": "Запуск Squid на порту 3131",
+        "container_name": "squid-proxy-231903",
+        "dockerfile": "docker.io/sameersbn/squid:latest",
+        "result": "успех",
+        "output_summary": "Порт 3131, сохранение: n, правило доступа: 2",
+        "project_sync": "yes"
+    }
+]
+{
+        "action": "02_squid_proxy",
+        "topic": "прокси",
+        "experiment": "Запуск Squid на порту 3128",
+        "container_name": "squid-proxy-646611",
+        "dockerfile": "docker.io/sameersbn/squid:latest",
+        "result": "успех",
+        "output_summary": "Порт 3128, сохранение: n, правило доступа: 2",
+        "project_sync": "yes"
+    }
+]
+{
+        "action": "02_squid_proxy",
+        "topic": "прокси",
+        "experiment": "Запуск Squid на порту 3128",
+        "container_name": "squid-proxy-646611",
+        "dockerfile": "docker.io/sameersbn/squid:latest",
+        "result": "успех",
+        "output_summary": "Порт 3128, сохранение: n, правило доступа: 2",
+        "project_sync": "yes"
+    }
+]
+{
+        "action": "02_squid_proxy",
+        "topic": "прокси",
+        "experiment": "Запуск Squid на порту 3128",
+        "container_name": "squid-proxy-646611",
+        "dockerfile": "docker.io/sameersbn/squid:latest",
+        "result": "успех",
+        "output_summary": "Порт 3128, сохранение: n, правило доступа: 2",
+        "project_sync": "yes"
+    }
+]
+{
+        "action": "02_squid_proxy",
+        "topic": "прокси",
+        "experiment": "Запуск Squid на порту 3128",
+        "container_name": "squid-proxy-646611",
+        "dockerfile": "docker.io/sameersbn/squid:latest",
+        "result": "успех",
+        "output_summary": "Порт 3128, сохранение: n, правило доступа: 2",
+        "project_sync": "yes"
+    }
+]
+{
+        "action": "02_squid_proxy",
+        "topic": "прокси",
+        "experiment": "Запуск Squid на порту 3128",
+        "container_name": "squid-proxy-646611",
+        "dockerfile": "docker.io/sameersbn/squid:latest",
+        "result": "успех",
+        "output_summary": "Порт 3128, сохранение: n, правило доступа: 2",
+        "project_sync": "yes"
+    }
+]
+{
+        "action": "02_squid_proxy",
+        "topic": "прокси",
+        "experiment": "Запуск Squid на порту 3128",
+        "container_name": "squid-proxy-646611",
+        "dockerfile": "docker.io/sameersbn/squid:latest",
+        "result": "успех",
+        "output_summary": "Порт 3128, сохранение: n, правило доступа: 2",
+        "project_sync": "yes"
+    }
+]
+{
+        "action": "02_squid_proxy",
+        "topic": "прокси",
+        "experiment": "Запуск Squid на порту 3130 (анонимность: 2)",
+        "container_name": "squid-proxy-672020",
+        "dockerfile": "docker.io/sameersbn/squid:latest",
+        "result": "успех",
+        "output_summary": "Порт 3130, сохранение: n, анонимность: 2",
+        "project_sync": "yes"
+    }
+]
+{
+        "action": "02_squid_proxy",
+        "topic": "прокси",
+        "experiment": "Запуск Squid на порту 3130 (анонимность: 3)",
+        "container_name": "squid-proxy-672020",
+        "dockerfile": "docker.io/sameersbn/squid:latest",
+        "result": "успех",
+        "output_summary": "Порт 3130, сохранение: n, анонимность: 3",
+        "project_sync": "yes"
+    }
+]
+{
+        "action": "02_squid_proxy",
+        "topic": "прокси",
+        "experiment": "Запуск Squid на порту 3131 (анонимность: 3)",
+        "container_name": "squid-proxy-680610",
+        "dockerfile": "docker.io/sameersbn/squid:latest",
+        "result": "успех",
+        "output_summary": "Порт 3131, сохранение: n, анонимность: 3",
+        "project_sync": "yes"
+    }
+]
+{
+        "action": "02_squid_proxy",
+        "topic": "прокси",
+        "experiment": "Запуск Squid на порту 3128 (анонимность: 3)",
+        "container_name": "squid-proxy-680610",
+        "dockerfile": "docker.io/sameersbn/squid:latest",
+        "result": "успех",
+        "output_summary": "Порт 3128, сохранение: n, анонимность: 3",
+        "project_sync": "yes"
+    }
+]
+{
+        "action": "02_squid_proxy",
+        "topic": "прокси",
+        "experiment": "Запуск Squid на порту 3128 (анонимность: 3)",
+        "container_name": "squid-proxy-693464",
+        "dockerfile": "docker.io/sameersbn/squid:latest",
+        "result": "успех",
+        "output_summary": "Порт 3128, сохранение: n, анонимность: 3",
+        "project_sync": "yes"
+    }
+]
+{
+        "action": "02_squid_proxy",
+        "topic": "прокси",
+        "experiment": "Запуск Squid на порту 3130 (анонимность: 3)",
+        "container_name": "squid-proxy-1670983",
+        "dockerfile": "docker.io/sameersbn/squid:latest",
+        "result": "успех",
+        "output_summary": "Порт 3130, сохранение: n, анонимность: 3",
+        "project_sync": "yes"
+    }
+]
