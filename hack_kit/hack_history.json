@@ -373,3 +373,47 @@
         "project_sync": "yes"
     }
 ]
+{
+        "action": "04_ssh_tunnel",
+        "topic": "ssh-туннель",
+        "experiment": "Запуск SOCKS-прокси через SSH",
+        "container_name": "ssh-server-27401",
+        "dockerfile": "docker.io/linuxserver/openssh-server:latest",
+        "result": "успех",
+        "output_summary": "SSH-порт 2222, SOCKS-порт 1080",
+        "project_sync": "yes"
+    }
+]
+{
+        "action": "04_ssh_tunnel",
+        "topic": "ssh-туннель",
+        "experiment": "Запуск SOCKS-прокси через SSH",
+        "container_name": "ssh-server-39205",
+        "dockerfile": "docker.io/linuxserver/openssh-server:latest",
+        "result": "успех",
+        "output_summary": "SSH-порт 2222, SOCKS-порт 1080",
+        "project_sync": "yes"
+    }
+]
+{
+        "action": "04_ssh_tunnel",
+        "topic": "ssh-туннель",
+        "experiment": "Запуск SOCKS-прокси через SSH",
+        "container_name": "ssh-server-48159",
+        "dockerfile": "docker.io/linuxserver/openssh-server:latest",
+        "result": "успех",
+        "output_summary": "SSH-порт 2222, SOCKS-порт 1080",
+        "project_sync": "yes"
+    }
+]
+{
+        "action": "04_ssh_tunnel",
+        "topic": "ssh-туннель",
+        "experiment": "Запуск SOCKS-прокси через SSH",
+        "container_name": "ssh-server-48159",
+        "dockerfile": "docker.io/linuxserver/openssh-server:latest",
+        "result": "успех",
+        "output_summary": "SSH-порт 2222, SOCKS-порт 1080",
+        "project_sync": "yes"
+    }
+]
