@@ -318,3 +318,58 @@
         "project_sync": "yes"
     }
 ]
+{
+        "action": "02_squid_proxy",
+        "topic": "прокси",
+        "experiment": "Запуск Squid на порту 3131 (анонимность: 3)",
+        "container_name": "squid-proxy-1757766",
+        "dockerfile": "docker.io/sameersbn/squid:latest",
+        "result": "успех",
+        "output_summary": "Порт 3131, сохранение: n, анонимность: 3",
+        "project_sync": "yes"
+    }
+]
+{
+        "action": "03_https_server",
+        "topic": "шифрование",
+        "experiment": "Запуск HTTPS сервера на порту 443",
+        "container_name": "nginx-https-3227",
+        "dockerfile": "docker.io/nginx:alpine",
+        "result": "успех",
+        "output_summary": "Порт 443, RAM директория: /dev/shm/nginx-3227",
+        "project_sync": "yes"
+    }
+]
+{
+        "action": "03_https_server",
+        "topic": "шифрование",
+        "experiment": "Запуск HTTPS сервера на порту 443",
+        "container_name": "nginx-https-3227",
+        "dockerfile": "docker.io/nginx:alpine",
+        "result": "успех",
+        "output_summary": "Порт 443, RAM директория: /dev/shm/nginx-3227",
+        "project_sync": "yes"
+    }
+]
+{
+        "action": "03_https_server",
+        "topic": "шифрование",
+        "experiment": "Запуск HTTPS",
+        "container_name": "nginx-https-3227",
+        "dockerfile": "docker.io/nginx:alpine",
+        "result": "успех",
+        "output_summary": "Порт 443, RAM",
+        "project_sync": "yes"
+    }
+]
+{
+        "action": "03_https_server",
+        "topic": "шифрование",
+        "experiment": "Запуск HTTPS",
+        "container_name": "nginx-https-9104",
+        "dockerfile": "docker.io/nginx:alpine",
+        "result": "успех",
+        "output_summary": "Порт 443, RAM",
+        "project_sync": "yes"
+    }
+]
