@@ -3,4 +3,7 @@ env/
 venv/
 .env
 bin/
-dumps/
+dumps/-e 
+# AI platform artifacts
+Caddyfile
+worklog.md
